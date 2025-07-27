@@ -42,13 +42,12 @@ export const GlassCard = ({
   return (
     <motion.div
       className={cn(
-        "relative overflow-hidden rounded-xl backdrop-blur-lg bg-white/20 border border-white/30 p-6 shadow-xl",
+        "relative overflow-hidden rounded-xl backdrop-blur-lg bg-white/20 p-6 shadow-xl",
         className
       )}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5 }}
-      whileHover={{ scale: 1.02 }}
     >
       {children}
     </motion.div>

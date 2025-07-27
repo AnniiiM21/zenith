@@ -48,12 +48,12 @@ export const TimerDisplay = ({
         `bg-gradient-to-r ${timerColor}`
       )} />
       
-      {/* Timer circle */}
+      {/* Timer circle - Made bigger and more prominent */}
       <motion.div
         className={cn(
-          "relative flex items-center justify-center w-96 h-96 rounded-full",
-          "bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg",
-          "border-2 border-white/20 shadow-2xl"
+          "relative flex items-center justify-center w-[28rem] h-[28rem] rounded-full",
+          "bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl",
+          "border-4 border-white/30 shadow-[0_0_80px_rgba(102,126,234,0.4)]"
         )}
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
@@ -64,24 +64,48 @@ export const TimerDisplay = ({
           delay: 0.2 
         }}
       >
-        {/* Inner circle with gradient */}
+        {/* Outer ring animation */}
+        <motion.div
+          className={cn(
+            "absolute inset-0 rounded-full border-4",
+            `border-gradient-to-r ${timerColor}`,
+            "opacity-60"
+          )}
+          animate={isRunning ? {
+            rotate: 360,
+          } : {}}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
+        
+        {/* Inner circle with enhanced gradient */}
         <div className={cn(
-          "absolute inset-6 rounded-full",
+          "absolute inset-8 rounded-full",
           `bg-gradient-to-br ${timerColor}`,
-          "shadow-2xl"
+          "shadow-[0_0_60px_rgba(102,126,234,0.6)]",
+          "border-2 border-white/20"
         )}>
-          {/* Shine effect */}
-          <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/30 via-transparent to-transparent" />
+          {/* Enhanced shine effect */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/40 via-white/10 to-transparent" />
           
-          {/* Inner glow */}
+          {/* Multiple inner glows for depth */}
           <div className={cn(
-            "absolute inset-2 rounded-full",
+            "absolute inset-3 rounded-full",
             `bg-gradient-to-br ${timerColor}`,
-            "opacity-80"
+            "opacity-90 shadow-inner"
+          )} />
+          
+          <div className={cn(
+            "absolute inset-6 rounded-full",
+            `bg-gradient-to-br ${timerColor}`,
+            "opacity-70"
           )} />
         </div>
         
-        {/* Timer text */}
+        {/* Timer text with enhanced visibility */}
         <motion.div
           className="relative z-10 text-center"
           initial={{ opacity: 0 }}
@@ -89,14 +113,28 @@ export const TimerDisplay = ({
           transition={{ delay: 0.5 }}
         >
           <div 
-            className="text-7xl font-bold text-white drop-shadow-2xl tracking-tighter"
-            style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+            className="text-8xl font-bold tracking-tighter"
+            style={{ 
+              fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',
+              textShadow: '0 0 30px rgba(255,255,255,0.4), 0 8px 16px rgba(0,0,0,0.6)',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}
           >
             {time}
           </div>
           <div 
-            className="text-xl font-medium text-white/90 mt-4 drop-shadow-lg tracking-wide"
-            style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+            className="text-2xl font-semibold mt-6 tracking-wide"
+            style={{ 
+              fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',
+              textShadow: '0 0 30px rgba(255,255,255,0.4), 0 8px 16px rgba(0,0,0,0.6)',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}
           >
             {sessionType === "work" ? "Focus Time" : "Break Time"}
           </div>
