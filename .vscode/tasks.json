@@ -12,6 +12,18 @@
 			"group": "build",
 			"isBackground": true,
 			"problemMatcher": []
+		},
+		{
+			"label": "Launch Zenith App",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"electron"
+			],
+			"group": "build",
+			"isBackground": true,
+			"problemMatcher": []
 		}
 	]
 }

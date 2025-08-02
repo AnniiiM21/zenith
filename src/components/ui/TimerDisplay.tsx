@@ -113,27 +113,21 @@ export const TimerDisplay = ({
           transition={{ delay: 0.5 }}
         >
           <div 
-            className="text-8xl font-bold tracking-tighter"
+            className="text-8xl font-bold tracking-tighter text-white"
             style={{ 
               fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',
               textShadow: '0 0 30px rgba(255,255,255,0.4), 0 8px 16px rgba(0,0,0,0.6)',
-              background: 'linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
+              color: '#ffffff'
             }}
           >
             {time}
           </div>
           <div 
-            className="text-2xl font-semibold mt-6 tracking-wide"
+            className="text-2xl font-semibold mt-6 tracking-wide text-white"
             style={{ 
               fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',
               textShadow: '0 0 30px rgba(255,255,255,0.4), 0 8px 16px rgba(0,0,0,0.6)',
-              background: 'linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
+              color: '#ffffff'
             }}
           >
             {sessionType === "work" ? "Focus Time" : "Break Time"}

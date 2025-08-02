@@ -1,9 +1,11 @@
 const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
+const BrowserActivityTracker = require('./browserTracker');
 const isDev = process.env.NODE_ENV === 'development';
 
 let mainWindow;
 let timerWidget = null;
+let browserTracker = null;
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
@@ -89,7 +91,13 @@ function closeTimerWidget() {
   }
 }
 
-app.whenReady().then(createMainWindow);
+app.whenReady().then(() => {
+  createMainWindow();
+  
+  // Initialize browser activity tracker
+  browserTracker = new BrowserActivityTracker();
+  console.log('🎯 Browser Activity Tracker initialized');
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -167,4 +175,58 @@ ipcMain.handle('open-timer-widget', async (event, data) => {
       timerWidget.webContents.send('timer-data', data);
     });
   }
+});
+
+// Browser Activity Tracking handlers
+ipcMain.handle('start-browser-tracking', async () => {
+  if (browserTracker) {
+    console.log('🎯 Starting browser tracking via IPC...');
+    browserTracker.startTracking();
+    return { success: true, message: 'Browser tracking started' };
+  }
+  console.error('❌ Browser tracker not initialized');
+  return { success: false, message: 'Browser tracker not initialized' };
+});
+
+ipcMain.handle('stop-browser-tracking', async () => {
+  if (browserTracker) {
+    console.log('⏹️ Stopping browser tracking via IPC...');
+    browserTracker.stopTracking();
+    return { success: true, message: 'Browser tracking stopped' };
+  }
+  return { success: false, message: 'Browser tracker not initialized' };
+});
+
+ipcMain.handle('test-browser-tracking', async () => {
+  if (browserTracker) {
+    console.log('🧪 Testing browser tracking PowerShell...');
+    browserTracker.testPowerShell();
+    return { success: true, message: 'PowerShell test initiated' };
+  }
+  return { success: false, message: 'Browser tracker not initialized' };
+});
+
+ipcMain.handle('get-browser-stats', async () => {
+  if (browserTracker) {
+    return browserTracker.exportStats();
+  }
+  return null;
+});
+
+ipcMain.handle('clear-browser-stats', async () => {
+  if (browserTracker) {
+    browserTracker.clearStats();
+    return { success: true, message: 'Browser stats cleared' };
+  }
+  return { success: false, message: 'Browser tracker not initialized' };
+});
+
+ipcMain.handle('get-browser-tracking-status', async () => {
+  if (browserTracker) {
+    return { 
+      isTracking: browserTracker.isTracking,
+      currentSession: browserTracker.currentSession 
+    };
+  }
+  return { isTracking: false, currentSession: null };
 });

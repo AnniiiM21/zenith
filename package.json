@@ -11,7 +11,9 @@
     "electron": "electron .",
     "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\"",
     "build-electron": "npm run build && electron-builder",
-    "dist": "npm run build && electron-builder --publish=never"
+    "dist": "npm run build && electron-builder --publish=never",
+    "build-extension": "webpack --config webpack.extension.config.js",
+    "dev-extension": "webpack --config webpack.extension.config.js --watch"
   },
   "keywords": [
     "productivity",
@@ -23,9 +25,15 @@
   "author": "Aniruddha Mondal",
   "license": "MIT",
   "devDependencies": {
+    "@babel/core": "^7.28.0",
+    "@babel/preset-env": "^7.28.0",
+    "@babel/preset-react": "^7.27.1",
+    "@babel/preset-typescript": "^7.27.1",
     "@tailwindcss/postcss": "^4.1.11",
     "autoprefixer": "^10.4.21",
+    "babel-loader": "^10.0.0",
     "concurrently": "^9.2.0",
+    "copy-webpack-plugin": "^13.0.0",
     "css-loader": "^7.1.2",
     "electron": "^37.2.4",
     "electron-builder": "^26.0.12",
@@ -44,6 +52,7 @@
     "@types/node": "^24.1.0",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
+    "axios": "^1.11.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.9",
     "lucide-react": "^0.526.0",
@@ -51,6 +60,7 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.1",
     "tailwind-merge": "^3.3.1",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "url-parse": "^1.5.10"
   }
 }

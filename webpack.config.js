@@ -7,6 +7,7 @@ module.exports = {
   entry: './src/index.tsx',
   devtool: 'inline-source-map',
   target: 'electron-renderer',
+  cache: false,
   module: {
     rules: [
       {

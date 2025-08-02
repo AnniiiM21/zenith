@@ -2,6 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
+/* EMERGENCY WHITE SCREEN FIX */
+html {
+  background: #0F0F23 !important;
+  color: #ffffff !important;
+}
+
+body {
+  background: linear-gradient(135deg, #0F0F23 0%, #1A1A2E 50%, #16213E 100%) !important;
+  color: #ffffff !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 100vh !important;
+}
+
+#root {
+  background: linear-gradient(135deg, #0F0F23 0%, #1A1A2E 50%, #16213E 100%) !important;
+  color: #ffffff !important;
+  min-height: 100vh !important;
+}
+
+/* FORCE WHITE TEXT OVERRIDE FOR BRAVE BROWSER */
+* {
+  color: #ffffff !important;
+}
+
+h1, h2, h3, h4, h5, h6, p, span, div {
+  color: #ffffff !important;
+}
+
+/* Extra strong overrides for Brave browser */
+.text-white {
+  color: #ffffff !important;
+}
+
+/* Force all text elements to be white */
+button, a, label, input, textarea {
+  color: #ffffff !important;
+}
+
+/* Override any potential framework styles */
+[class*="text-"] {
+  color: #ffffff !important;
+}
+
 :root {
   --background: 0 0% 100%;
   --foreground: 222.2 84% 4.9%;
