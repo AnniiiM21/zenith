@@ -12,8 +12,19 @@ class ZenithBackground {
       activeTab: null
     };
     
+    // Timer state management
+    this.timerState = {
+      isActive: false,
+      startTime: null,
+      duration: 0,
+      sessionType: 'work'
+    };
+    this.timerInterval = null;
+    
     this.setupEventListeners();
     this.setupAlarms();
+    this.restoreTimerState();
+    this.restoreTrackingState();
   }
 
   setupEventListeners() {
@@ -70,6 +81,11 @@ class ZenithBackground {
         url: tab.url,
         title: tab.title
       };
+      
+      // Update persistent storage with tab switches count
+      await chrome.storage.local.set({
+        trackingTabSwitches: this.trackingData.tabSwitches
+      });
     } catch (error) {
       console.log('Tab tracking error:', error);
     }
@@ -101,6 +117,9 @@ class ZenithBackground {
       siteData.visits++;
       siteData.lastVisit = now;
       
+      // Update persistent storage with sites data
+      this.updateTrackingStorage();
+      
       // Update badge with site count
       this.updateBadge();
     } catch (error) {
@@ -127,6 +146,14 @@ class ZenithBackground {
       activeTab: null
     };
 
+    // Save tracking state to Chrome storage for persistence
+    await chrome.storage.local.set({
+      trackingActive: true,
+      trackingStartTime: this.trackingData.startTime,
+      trackingTabSwitches: 0,
+      trackingSites: {} // Will be updated as sites are visited
+    });
+
     // Get current active tab
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -143,7 +170,7 @@ class ZenithBackground {
     }
 
     this.updateBadge();
-    console.log('✅ Zenith tracking started');
+    console.log('✅ Zenith tracking started - will persist until manually stopped');
   }
 
   async stopTracking() {
@@ -155,8 +182,16 @@ class ZenithBackground {
     // Save to storage
     await this.saveTrackingReport(report);
     
+    // Clear persistent tracking state
+    await chrome.storage.local.remove([
+      'trackingActive', 
+      'trackingStartTime', 
+      'trackingTabSwitches', 
+      'trackingSites'
+    ]);
+    
     this.updateBadge();
-    console.log('🛑 Zenith tracking stopped');
+    console.log('🛑 Zenith tracking stopped - persistent state cleared');
     
     return report;
   }
@@ -275,13 +310,26 @@ class ZenithBackground {
           await this.startTimer(request.duration, request.sessionType);
           sendResponse({ success: true });
           break;
-          
+
         case 'stopTimer':
           await this.stopTimer();
           sendResponse({ success: true });
           break;
-          
-        default:
+
+        case 'pauseTimer':
+          await this.pauseTimer();
+          sendResponse({ success: true });
+          break;
+
+        case 'resumeTimer':
+          await this.resumeTimer();
+          sendResponse({ success: true });
+          break;
+
+        case 'getTimerState':
+          const timerData = await this.getTimerState();
+          sendResponse(timerData);
+          break;        default:
           sendResponse({ error: 'Unknown action' });
       }
     } catch (error) {
@@ -306,28 +354,131 @@ class ZenithBackground {
   }
 
   async startTimer(duration, sessionType = 'work') {
-    // Create alarm for timer
+    // Clear any existing timer
+    await this.stopTimer();
+    
+    // Set up timer state
+    this.timerState = {
+      isActive: true,
+      startTime: Date.now(),
+      duration: duration * 60 * 1000, // Convert minutes to milliseconds
+      sessionType
+    };
+    
+    // Create alarm for timer completion
     await chrome.alarms.create('zenithTimer', {
       delayInMinutes: duration
     });
     
-    // Store timer info
+    // Store timer info in chrome storage for persistence
     await chrome.storage.local.set({
       timerActive: true,
-      timerStart: Date.now(),
-      timerDuration: duration * 60 * 1000,
+      timerStart: this.timerState.startTime,
+      timerDuration: this.timerState.duration,
       sessionType
     });
     
-    // Update badge to show timer
+    // Update badge to show timer is active
     await chrome.action.setBadgeText({ text: '⏱️' });
     await chrome.action.setBadgeBackgroundColor({ color: '#667EEA' });
+    
+    // Start timer update interval for badge updates
+    this.startTimerInterval();
   }
 
   async stopTimer() {
+    // Clear alarm
     await chrome.alarms.clear('zenithTimer');
-    await chrome.storage.local.remove(['timerActive', 'timerStart', 'timerDuration', 'sessionType']);
+    
+    // Clear timer interval
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+    
+    // Reset timer state
+    this.timerState = {
+      isActive: false,
+      startTime: null,
+      duration: 0,
+      sessionType: 'work'
+    };
+    
+    // Clear storage
+    await chrome.storage.local.remove(['timerActive', 'timerStart', 'timerDuration', 'sessionType', 'timerPaused', 'pausedTimeLeft']);
+    
+    // Reset badge
     this.updateBadge();
+  }
+
+  async pauseTimer() {
+    if (!this.timerState.isActive) return;
+    
+    // Calculate remaining time
+    const elapsed = Date.now() - this.timerState.startTime;
+    const remaining = Math.max(0, this.timerState.duration - elapsed);
+    
+    // Clear alarm and interval
+    await chrome.alarms.clear('zenithTimer');
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+    
+    // Mark as paused
+    this.timerState.isActive = false;
+    
+    // Store paused state
+    await chrome.storage.local.set({
+      timerPaused: true,
+      pausedTimeLeft: remaining,
+      sessionType: this.timerState.sessionType
+    });
+    
+    // Update badge to show paused
+    await chrome.action.setBadgeText({ text: '⏸️' });
+    await chrome.action.setBadgeBackgroundColor({ color: '#f59e0b' });
+  }
+
+  async resumeTimer() {
+    try {
+      const data = await chrome.storage.local.get(['timerPaused', 'pausedTimeLeft', 'sessionType']);
+      
+      if (!data.timerPaused || !data.pausedTimeLeft) return;
+      
+      // Resume timer with remaining time
+      this.timerState = {
+        isActive: true,
+        startTime: Date.now(),
+        duration: data.pausedTimeLeft,
+        sessionType: data.sessionType || 'work'
+      };
+      
+      // Set alarm for remaining time
+      await chrome.alarms.create('zenithTimer', {
+        delayInMinutes: data.pausedTimeLeft / (60 * 1000)
+      });
+      
+      // Store resumed timer info
+      await chrome.storage.local.set({
+        timerActive: true,
+        timerStart: this.timerState.startTime,
+        timerDuration: this.timerState.duration,
+        sessionType: this.timerState.sessionType
+      });
+      
+      // Clear paused state
+      await chrome.storage.local.remove(['timerPaused', 'pausedTimeLeft']);
+      
+      // Update badge to show timer is active
+      await chrome.action.setBadgeText({ text: '⏱️' });
+      await chrome.action.setBadgeBackgroundColor({ color: '#667EEA' });
+      
+      // Start timer update interval
+      this.startTimerInterval();
+    } catch (error) {
+      console.error('Error resuming timer:', error);
+    }
   }
 
   async handleAlarm(alarm) {
@@ -342,6 +493,170 @@ class ZenithBackground {
       
       // Clear timer storage
       await this.stopTimer();
+    }
+  }
+
+  // New timer management methods
+  async restoreTimerState() {
+    try {
+      // First check if timer is paused
+      const pausedData = await chrome.storage.local.get(['timerPaused', 'pausedTimeLeft', 'sessionType']);
+      if (pausedData.timerPaused && pausedData.pausedTimeLeft) {
+        // Timer is paused, just update badge
+        await chrome.action.setBadgeText({ text: '⏸️' });
+        await chrome.action.setBadgeBackgroundColor({ color: '#f59e0b' });
+        return;
+      }
+      
+      // Check if timer is running
+      const data = await chrome.storage.local.get(['timerActive', 'timerStart', 'timerDuration', 'sessionType']);
+      
+      if (data.timerActive && data.timerStart && data.timerDuration) {
+        const elapsed = Date.now() - data.timerStart;
+        const remaining = data.timerDuration - elapsed;
+        
+        if (remaining > 0) {
+          // Timer is still running
+          this.timerState = {
+            isActive: true,
+            startTime: data.timerStart,
+            duration: data.timerDuration,
+            sessionType: data.sessionType || 'work'
+          };
+          
+          // Set alarm for remaining time
+          await chrome.alarms.create('zenithTimer', {
+            delayInMinutes: remaining / (60 * 1000)
+          });
+          
+          // Update badge
+          await chrome.action.setBadgeText({ text: '⏱️' });
+          await chrome.action.setBadgeBackgroundColor({ color: '#667EEA' });
+          
+          // Start timer interval
+          this.startTimerInterval();
+        } else {
+          // Timer has expired, clean up
+          await this.stopTimer();
+        }
+      }
+    } catch (error) {
+      console.error('Error restoring timer state:', error);
+    }
+  }
+
+  startTimerInterval() {
+    // Clear any existing interval
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+    
+    // Update badge every second with remaining time
+    this.timerInterval = setInterval(() => {
+      if (this.timerState.isActive) {
+        const elapsed = Date.now() - this.timerState.startTime;
+        const remaining = this.timerState.duration - elapsed;
+        
+        if (remaining > 0) {
+          const minutes = Math.floor(remaining / (60 * 1000));
+          const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
+          const timeText = minutes > 0 ? `${minutes}m` : `${seconds}s`;
+          chrome.action.setBadgeText({ text: timeText });
+        } else {
+          // Timer finished
+          this.stopTimer();
+        }
+      }
+    }, 1000);
+  }
+
+  async getTimerState() {
+    // Check if timer is paused
+    const pausedData = await chrome.storage.local.get(['timerPaused', 'pausedTimeLeft', 'sessionType']);
+    if (pausedData.timerPaused && pausedData.pausedTimeLeft) {
+      return {
+        isActive: false,
+        isPaused: true,
+        timeLeft: Math.floor(pausedData.pausedTimeLeft / 1000), // Return in seconds
+        sessionType: pausedData.sessionType || 'work',
+        totalDuration: 0
+      };
+    }
+    
+    if (!this.timerState.isActive) {
+      return {
+        isActive: false,
+        isPaused: false,
+        timeLeft: 0,
+        sessionType: 'work'
+      };
+    }
+    
+    const elapsed = Date.now() - this.timerState.startTime;
+    const remaining = Math.max(0, this.timerState.duration - elapsed);
+    
+    return {
+      isActive: this.timerState.isActive,
+      isPaused: false,
+      timeLeft: Math.floor(remaining / 1000), // Return in seconds
+      sessionType: this.timerState.sessionType,
+      totalDuration: Math.floor(this.timerState.duration / 1000)
+    };
+  }
+
+  // Tracking persistence methods
+  async updateTrackingStorage() {
+    if (!this.isTracking) return;
+    
+    try {
+      // Convert sites Map to object for storage
+      const sitesObject = {};
+      this.trackingData.sites.forEach((siteData, domain) => {
+        sitesObject[domain] = siteData;
+      });
+      
+      await chrome.storage.local.set({
+        trackingSites: sitesObject,
+        trackingTabSwitches: this.trackingData.tabSwitches
+      });
+    } catch (error) {
+      console.error('Error updating tracking storage:', error);
+    }
+  }
+
+  async restoreTrackingState() {
+    try {
+      const data = await chrome.storage.local.get([
+        'trackingActive', 
+        'trackingStartTime', 
+        'trackingTabSwitches', 
+        'trackingSites'
+      ]);
+      
+      if (data.trackingActive && data.trackingStartTime) {
+        // Restore tracking state
+        this.isTracking = true;
+        this.trackingData = {
+          startTime: data.trackingStartTime,
+          sites: new Map(),
+          tabSwitches: data.trackingTabSwitches || 0,
+          activeTab: null
+        };
+        
+        // Restore sites Map from stored object
+        if (data.trackingSites) {
+          Object.entries(data.trackingSites).forEach(([domain, siteData]) => {
+            this.trackingData.sites.set(domain, siteData);
+          });
+        }
+        
+        // Update badge to show tracking is active
+        this.updateBadge();
+        
+        console.log('✅ Tracking state restored - continuing from previous session');
+      }
+    } catch (error) {
+      console.error('Error restoring tracking state:', error);
     }
   }
 
