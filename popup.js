@@ -164,6 +164,12 @@ class ZenithPopup {
         // Start new timer
         const duration = this.isCustomTimer ? this.customWorkMinutes : this.selectedPreset.workMinutes;
         
+        // Store current preset for break duration calculation
+        await chrome.storage.local.set({
+          currentPreset: this.selectedPreset.name,
+          currentBreakDuration: this.isCustomTimer ? this.customBreakMinutes : this.selectedPreset.breakMinutes
+        });
+        
         await chrome.runtime.sendMessage({
           action: 'startTimer',
           duration: duration,
