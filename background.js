@@ -110,6 +110,8 @@ class ZenithBackground {
           timeSpent: 0,
           visits: 0,
           lastVisit: now,
+          focusTime: 0,
+          activities: 0,
         });
       }
 
@@ -124,6 +126,41 @@ class ZenithBackground {
       this.updateBadge();
     } catch (error) {
       console.log("Site tracking error:", error);
+    }
+  }
+
+  updateSiteActivity(activityData) {
+    if (!this.isTracking || !activityData.domain) return;
+
+    try {
+      const domain = activityData.domain;
+
+      if (!this.trackingData.sites.has(domain)) {
+        // Create site entry if it doesn't exist
+        this.trackSiteVisit(activityData.url, activityData.title);
+      }
+
+      const siteData = this.trackingData.sites.get(domain);
+
+      // Update focus time if provided
+      if (activityData.focusTime) {
+        siteData.focusTime = activityData.focusTime;
+      }
+
+      // Update total time spent if provided
+      if (activityData.totalTime) {
+        siteData.timeSpent = activityData.totalTime;
+      }
+
+      // Increment activity counter
+      if (activityData.activityType === "activity") {
+        siteData.activities = (siteData.activities || 0) + 1;
+      }
+
+      // Update persistent storage
+      this.updateTrackingStorage();
+    } catch (error) {
+      console.log("Activity tracking error:", error);
     }
   }
 
@@ -173,9 +210,6 @@ class ZenithBackground {
     }
 
     this.updateBadge();
-    console.log(
-      "✅ Zenith tracking started - will persist until manually stopped"
-    );
   }
 
   async stopTracking() {
@@ -196,7 +230,6 @@ class ZenithBackground {
     ]);
 
     this.updateBadge();
-    console.log("🛑 Zenith tracking stopped - persistent state cleared");
 
     return report;
   }
@@ -237,9 +270,18 @@ class ZenithBackground {
   }
 
   calculateTimeSpent(site) {
-    // Estimate time spent based on visits and activity
-    // This is a simplified calculation - in a real extension you'd track focus time
-    return site.visits * 60000; // Assume 1 minute per visit for demo
+    // Use actual focus time if available, otherwise estimate based on visits
+    if (site.focusTime && site.focusTime > 0) {
+      return site.focusTime;
+    } else if (site.timeSpent && site.timeSpent > 0) {
+      return site.timeSpent;
+    } else {
+      // Estimate: 2 minutes per visit for active browsing
+      const estimatedTime = site.visits * 120000; // 2 minutes per visit
+      // Add activity bonus (more activities = more engagement)
+      const activityBonus = (site.activities || 0) * 10000; // 10 seconds per activity
+      return Math.min(estimatedTime + activityBonus, site.visits * 600000); // Cap at 10 minutes per visit
+    }
   }
 
   calculateProductivityScore(sites) {
@@ -308,8 +350,12 @@ class ZenithBackground {
     try {
       switch (request.action) {
         case "startTracking":
-          await this.startTracking();
-          sendResponse({ success: true, tracking: true });
+          try {
+            await this.startTracking();
+            sendResponse({ success: true, tracking: true });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message });
+          }
           break;
 
         case "stopTracking":
@@ -353,6 +399,30 @@ class ZenithBackground {
           const timerData = await this.getTimerState();
           sendResponse(timerData);
           break;
+
+        case "trackPageVisit":
+          if (this.isTracking && request.data) {
+            this.trackSiteVisit(request.data.url, request.data.title);
+          }
+          sendResponse({ success: true });
+          break;
+
+        case "trackActivity":
+          if (this.isTracking && request.data) {
+            // Update activity data for the current site
+            this.updateSiteActivity(request.data);
+          }
+          sendResponse({ success: true });
+          break;
+
+        case "trackSessionEnd":
+          if (this.isTracking && request.data) {
+            // Update final session data
+            this.updateSiteActivity(request.data);
+          }
+          sendResponse({ success: true });
+          break;
+
         default:
           sendResponse({ error: "Unknown action" });
       }
@@ -520,238 +590,16 @@ class ZenithBackground {
 
   async handleAlarm(alarm) {
     if (alarm.name === "zenithTimer") {
-      await this.handleTimerComplete();
-    } else if (alarm.name === "zenithBreakTimer") {
-      await this.handleBreakComplete();
-    }
-  }
+      // Timer completed - show notification
+      await chrome.notifications.create({
+        type: "basic",
+        iconUrl: "icons/zenith_logo.png",
+        title: "Zenith Timer Complete!",
+        message: "Your focus session is complete. Time for a break!",
+      });
 
-  async handleTimerComplete() {
-    const currentSessionType = this.timerState.sessionType;
-
-    if (currentSessionType === "work") {
-      // Work session completed - start break
-      await this.showWorkCompleteNotification();
-    } else if (currentSessionType === "break") {
-      // Break completed - session finished
-      await this.showBreakCompleteNotification();
-    }
-  }
-
-  async showWorkCompleteNotification() {
-    // Show notification that work session is complete
-    await chrome.notifications.create("workComplete", {
-      type: "basic",
-      iconUrl: "icons/zenith_logo.png",
-      title: "Work Session Complete! 🎉",
-      message: "Great job! Time for a well-deserved break.",
-      buttons: [{ title: "Start Break" }, { title: "Skip Break" }],
-      requireInteraction: true,
-    });
-
-    // Listen for notification button clicks
-    chrome.notifications.onButtonClicked.addListener(
-      this.handleWorkCompleteResponse.bind(this)
-    );
-    chrome.notifications.onClicked.addListener(
-      this.handleWorkCompleteClick.bind(this)
-    );
-  }
-
-  async handleWorkCompleteResponse(notificationId, buttonIndex) {
-    if (notificationId === "workComplete") {
-      chrome.notifications.clear("workComplete");
-
-      if (buttonIndex === 0) {
-        // Start Break button clicked
-        await this.startBreakTimer();
-      } else {
-        // Skip Break button clicked
-        await this.completeSession();
-      }
-
-      // Remove listeners to prevent memory leaks
-      chrome.notifications.onButtonClicked.removeListener(
-        this.handleWorkCompleteResponse
-      );
-      chrome.notifications.onClicked.removeListener(
-        this.handleWorkCompleteClick
-      );
-    }
-  }
-
-  async handleWorkCompleteClick(notificationId) {
-    if (notificationId === "workComplete") {
-      // Default action when notification is clicked (not button)
-      chrome.notifications.clear("workComplete");
-      await this.startBreakTimer();
-
-      // Remove listeners
-      chrome.notifications.onButtonClicked.removeListener(
-        this.handleWorkCompleteResponse
-      );
-      chrome.notifications.onClicked.removeListener(
-        this.handleWorkCompleteClick
-      );
-    }
-  }
-
-  async startBreakTimer() {
-    // Get break duration from session preset (default 5 minutes)
-    const breakDuration = await this.getBreakDuration();
-
-    // Clear current timer state
-    await chrome.alarms.clear("zenithTimer");
-
-    // Set up break timer
-    this.timerState = {
-      isActive: true,
-      startTime: Date.now(),
-      duration: breakDuration * 60 * 1000, // Convert minutes to milliseconds
-      sessionType: "break",
-    };
-
-    // Create alarm for break completion
-    await chrome.alarms.create("zenithTimer", {
-      delayInMinutes: breakDuration,
-    });
-
-    // Store break timer info
-    await chrome.storage.local.set({
-      timerActive: true,
-      timerStart: this.timerState.startTime,
-      timerDuration: this.timerState.duration,
-      sessionType: "break",
-    });
-
-    // Update badge to show break timer
-    await chrome.action.setBadgeText({ text: "☕" });
-    await chrome.action.setBadgeBackgroundColor({ color: "#10b981" });
-
-    // Start timer interval for badge updates
-    this.startTimerInterval();
-
-    // Show break started notification
-    await chrome.notifications.create("breakStarted", {
-      type: "basic",
-      iconUrl: "icons/zenith_logo.png",
-      title: "Break Time Started! ☕",
-      message: `Enjoy your ${breakDuration}-minute break. You've earned it!`,
-    });
-
-    // Clear the notification after 3 seconds
-    setTimeout(() => {
-      chrome.notifications.clear("breakStarted");
-    }, 3000);
-  }
-
-  async getBreakDuration() {
-    // Get the stored break duration from current session
-    try {
-      const { currentBreakDuration } = await chrome.storage.local.get([
-        "currentBreakDuration",
-      ]);
-      return currentBreakDuration || 5; // Default to 5 minutes if not found
-    } catch (error) {
-      console.error("Error getting break duration:", error);
-      return 5; // Default fallback
-    }
-  }
-
-  async showBreakCompleteNotification() {
-    // Show notification that break is complete and session is finished
-    await chrome.notifications.create("sessionComplete", {
-      type: "basic",
-      iconUrl: "icons/zenith_logo.png",
-      title: "Session Complete! 🚀",
-      message: "Break time is over. Your productivity session is now complete!",
-      buttons: [{ title: "View Report" }, { title: "Start New Session" }],
-      requireInteraction: true,
-    });
-
-    // Listen for notification button clicks
-    chrome.notifications.onButtonClicked.addListener(
-      this.handleSessionCompleteResponse.bind(this)
-    );
-    chrome.notifications.onClicked.addListener(
-      this.handleSessionCompleteClick.bind(this)
-    );
-
-    // Complete the session
-    await this.completeSession();
-  }
-
-  async handleSessionCompleteResponse(notificationId, buttonIndex) {
-    if (notificationId === "sessionComplete") {
-      chrome.notifications.clear("sessionComplete");
-
-      if (buttonIndex === 0) {
-        // View Report button clicked - could open popup or create a report
-        console.log("User wants to view session report");
-      } else {
-        // Start New Session button clicked - could trigger popup to open
-        console.log("User wants to start new session");
-      }
-
-      // Remove listeners
-      chrome.notifications.onButtonClicked.removeListener(
-        this.handleSessionCompleteResponse
-      );
-      chrome.notifications.onClicked.removeListener(
-        this.handleSessionCompleteClick
-      );
-    }
-  }
-
-  async handleSessionCompleteClick(notificationId) {
-    if (notificationId === "sessionComplete") {
-      chrome.notifications.clear("sessionComplete");
-
-      // Remove listeners
-      chrome.notifications.onButtonClicked.removeListener(
-        this.handleSessionCompleteResponse
-      );
-      chrome.notifications.onClicked.removeListener(
-        this.handleSessionCompleteClick
-      );
-    }
-  }
-
-  async completeSession() {
-    // Stop any active tracking
-    if (this.isTracking) {
-      await this.stopTracking();
-    }
-
-    // Clear timer state
-    await this.stopTimer();
-
-    // Save session completion data
-    await this.saveSessionCompletion();
-  }
-
-  async saveSessionCompletion() {
-    try {
-      const { completedSessions = [] } = await chrome.storage.local.get([
-        "completedSessions",
-      ]);
-
-      const sessionData = {
-        completedAt: Date.now(),
-        sessionType: "full", // work + break cycle
-        duration: this.timerState.duration || 0,
-      };
-
-      completedSessions.unshift(sessionData);
-
-      // Keep only last 100 sessions
-      if (completedSessions.length > 100) {
-        completedSessions.splice(100);
-      }
-
-      await chrome.storage.local.set({ completedSessions });
-    } catch (error) {
-      console.error("Error saving session completion:", error);
+      // Clear timer storage
+      await this.stopTimer();
     }
   }
 
