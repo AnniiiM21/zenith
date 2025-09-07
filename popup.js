@@ -478,6 +478,28 @@ class ZenithPopup {
         }
         
         ${this.showCustomModal ? this.renderCustomModal() : ""}
+        
+        <!-- Footer -->
+        <div style="
+          text-align: center;
+          padding: 16px 20px;
+          margin-top: 20px;
+          border-top: 1px solid rgba(255,255,255,0.1);
+        ">
+          <div style="
+            font-size: 11px;
+            opacity: 0.5;
+            font-style: italic;
+            line-height: 1.4;
+          ">
+            made by the unfocussed engineer Aniruddha<br>
+            <span style="
+              font-size: 10px;
+              opacity: 0.4;
+              font-weight: 500;
+            ">from LifexInvader</span>
+          </div>
+        </div>
       </div>
     `;
 
