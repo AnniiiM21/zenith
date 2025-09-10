@@ -3,14 +3,7 @@
   "name": "Zenith - Peak Productivity Timer & Focus Tracker",
   "version": "1.0.0",
   "description": "Advanced productivity timer with real browser activity tracking, focus sessions, and detailed analytics.",
-  "permissions": [
-    "storage",
-    "tabs",
-    "activeTab",
-    "alarms",
-    "scripting",
-    "notifications"
-  ],
+  "permissions": ["storage", "tabs", "activeTab", "alarms", "notifications"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js",
