@@ -13,16 +13,14 @@
     "default_popup": "popup.html",
     "default_title": "Zenith Timer",
     "default_icon": {
-      "16": "icons/zenith_logo.png",
-      "32": "icons/zenith_logo.png",
-      "48": "icons/zenith_logo.png",
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
       "128": "icons/zenith_logo.png"
     }
   },
   "icons": {
-    "16": "icons/zenith_logo.png",
-    "32": "icons/zenith_logo.png",
-    "48": "icons/zenith_logo.png",
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
     "128": "icons/zenith_logo.png"
   },
   "content_scripts": [
