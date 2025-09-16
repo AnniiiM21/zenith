@@ -8,10 +8,13 @@
 
 A powerful Chrome extension designed for students, researchers, developers, and professionals who want to maximize their focus and track their digital productivity in real-time.
 
-[![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-green.svg)](https://chrome.google.com/webstore)
+**[📥 Install Now from Chrome Web Store](https://chromewebstore.google.com/detail/zenith-peak-productivity/ooajgilhjmkhlljfilhjjpoaacldpdbh)**
+
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Available-brightgreen.svg)](https://chromewebstore.google.com/detail/zenith-peak-productivity/ooajgilhjmkhlljfilhjjpoaacldpdbh)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue.svg)](https://developer.chrome.com/docs/extensions/mv3/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow.svg)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Privacy Policy](https://img.shields.io/badge/Privacy-Policy-blue.svg)](https://anniim21.github.io/zenith/privacy-policy.html)
 
 </div>
 
@@ -67,7 +70,18 @@ Perfect for **students**, **researchers**, **developers**, and **professionals**
 
 ## 📦 Installation
 
-### Method 1: Load Unpacked (Development)
+### 🚀 **Method 1: Chrome Web Store (Recommended)**
+
+**[📥 Install from Chrome Web Store](https://chromewebstore.google.com/detail/zenith-peak-productivity/ooajgilhjmkhlljfilhjjpoaacldpdbh)**
+
+1. **Click the link above** or search "Zenith Peak Productivity" in Chrome Web Store
+2. **Click "Add to Chrome"** to install the extension
+3. **Pin the extension** to your toolbar for easy access
+4. **Start your first session** by clicking the Zenith icon!
+
+### 🛠️ **Method 2: Development Installation**
+
+For developers who want to contribute or customize:
 
 1. **Download or Clone** this repository:
 
@@ -76,27 +90,16 @@ Perfect for **students**, **researchers**, **developers**, and **professionals**
    cd zenith
    ```
 
-2. **Build the Extension**:
-
-   ```bash
-   npm install
-   npm run build
-   ```
-
-3. **Load in Chrome**:
+2. **Load in Chrome**:
 
    - Open Chrome and go to `chrome://extensions/`
    - Enable "Developer mode" (toggle in top right)
    - Click "Load unpacked"
-   - Select the `dist` folder from the project directory
+   - Select the project root directory
 
-4. **Start Using**:
+3. **Start Using**:
    - Look for the Zenith icon in your Chrome toolbar
    - Click it to open the timer and start your first session!
-
-### Method 2: Chrome Web Store _(Coming Soon)_
-
-Extension will be available on the Chrome Web Store for easy one-click installation.
 
 ## 🎮 How to Use
 
@@ -165,9 +168,17 @@ Contributions are welcome! Feel free to:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## 🔗 Links
+
+- **[🌐 Chrome Web Store](https://chromewebstore.google.com/detail/zenith-peak-productivity/ooajgilhjmkhlljfilhjjpoaacldpdbh)** - Install the extension
+- **[🔒 Privacy Policy](https://anniim21.github.io/zenith/privacy-policy.html)** - How we protect your data
+- **[📖 GitHub Repository](https://github.com/AnniiiM21/zenith)** - Source code and contributions
+- **[🐛 Report Issues](https://github.com/AnniiiM21/zenith/issues)** - Bug reports and feature requests
+
 ## 👨‍💻 About the Developer
 
-**Made by the unfocused engineer Aniruddha**
+**Made by the unfocused engineer Aniruddha**  
+**from LifexInvader**
 
 Zenith was created to solve my own productivity challenges as a developer who struggled with focus and digital distractions. If this extension helps you achieve better focus and productivity, I've accomplished my goal!
 
@@ -175,7 +186,11 @@ Zenith was created to solve my own productivity challenges as a developer who st
 
 <div align="center">
 
-**⚡ Ready to reach your productivity peak? Install Zenith and start your focused journey today! ⚡**
+**⚡ Ready to reach your productivity peak? ⚡**
+
+**[📥 Install Zenith from Chrome Web Store](https://chromewebstore.google.com/detail/zenith-peak-productivity/ooajgilhjmkhlljfilhjjpoaacldpdbh)**
+
+_Start your focused journey today!_
 
 ![Zenith Logo](icons/zenith_logo.png)
 
